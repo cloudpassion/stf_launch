@@ -1,23 +1,58 @@
 param (
-	[string]$branch = "EA",
 	[switch]$multiplayer = $false,
 	[switch]$server = $false,
-	[switch]$client = $true
+	[switch]$client = $false,
+	[switch]$clienthost = $false
 )	
 	
 # original source from 
 # https://docs.ficsit.app/satisfactory-modding/latest/Development/TestingResources.html#LaunchScript
-#
+
 
 ##### EDITABLE VARS
 
-$SaveFolder = "C:\Users\$Env:UserName\AppData\Local\FactoryGame\Saved\SaveGames"
-
 $CommonArgs = "-log", "-offline", "-NoSteamClient", "-NoEpicPortal",  "-unattended", "-nothreadtimeout", "-nosplash", "-USEALLAVAILABLECORES", "-multihome=0.0.0.0", "-locallogtimes", "-EnableParallelCharacterMovementTickFunction", "-EnableParallelCharacterTickFunction", "-UseDynamicPhysicsScene", "-DisablePacketRouting", "-EpicApp=Satisfactory", "-EOSArtifactNameOverride=`"Satisfactory`"", "-EOSArtifactNameOverride='Satisfactory'", "-Multiprocess"
+
+$DefaultMapOptions = "DayLength=3600?NightLength=1?Visibility=SV_FriendsOnly?adminpassword=000111fff?bUseIpSockets=1?startloc=Grass Fields?advancedGameSettings=FG.GameRules.NoPower=AgAAAAQAAAABAAAA,FG.GameRules.StartingTier=DgAAAAQAAAAJAAAA,FG.GameRules.DisableArachnidCreatures=AgAAAAQAAAABAAAA,FG.GameRules.NoUnlockCost=AgAAAAQAAAABAAAA,FG.GameRules.SetGamePhase=DgAAAAQAAAAEAAAA,FG.GameRules.UnlockAllResearchSchematics=AgAAAAQAAAABAAAA,FG.GameRules.UnlockInstantAltRecipes=AgAAAAQAAAABAAAA,FG.PlayerRules.KeepInventory=DgAAAAQAAAACAAAA,FG.GameRules.UnlockAllResourceSinkSchematics=AgAAAAQAAAABAAAA,FG.PlayerRules.NoBuildCost=AgAAAAQAAAABAAAA,FG.PlayerRules.GodMode=AgAAAAQAAAABAAAA,FG.PlayerRules.FlightMode=AgAAAAQAAAABAAAA?SessionSettings=SML.ForceAllowCheats=AgAAAAQAAAABAAAA?listen"
+	
+$GameDefaultMap = "/Game/FactoryGame/Map/GameLevel01/Persistent_Level.Persistent_Level"	
+$MenuDefaultMap = "/Game/FactoryGame/Map/MenuScenes/Map_Menu_Titan_Update8.Map_Menu_Titan_Update8"
+
 
 ##### CODE
 
 
+if (!($server) -AND !($client) -AND !($clienthost)) {
+	Write "no launuch options"
+	Write "exiting..."
+	return
+}
+
+if (($client) -AND ($clienthost)) {
+	Write "only one client"
+	Write "exiting..."
+	return
+}
+
+if (($server) -AND ($clienthost)) {
+	Write "only one server allowed"
+	Write "exiting..."
+	return
+}
+
+$settings = Get-Content -Path 'settings.ini' -Raw | ConvertFrom-StringData
+$branch = $settings.branch
+
+if (!$branch) {
+	Write "no branch in settings.ini"
+	Write "exiting..."
+	return
+}
+
+
+$SavesFolder = "C:\Users\$Env:UserName\AppData\Local\FactoryGame\Saved\SaveGames"
+$STEAMID = Get-ChildItem -Path $SavesFolder\*7656* -Name
+$SaveFolder = $SavesFolder + "\" + $STEAMID
 
 # Configure these to match your system and preferences
 $ConfigDir = "$PSScriptRoot\configs"
@@ -41,11 +76,13 @@ if ($branch -eq "EA") {
 	$ConfigBranch = "Windows"
 	
 } else {
-	Write-Error "Unknown branch type: '$branch'"
+	Write "unknown branch: '$branch'"
+	Write "exiting..."
 	return
 }
 
 # server
+$def_Engine1_Path = "$ConfigDir\server\$ConfigBranch\def_Engine.ini"
 $Engine1_Path = "$ConfigDir\server\$ConfigBranch\Engine.ini"
 $GameUserSettings1_Path = "$ConfigDir\server\$ConfigBranch\GameUserSettings.ini"
 $Game1_Path = "$ConfigDir\server\$ConfigBranch\Game.ini"
@@ -84,6 +121,7 @@ $Wwise1_Path = "$ConfigDir\server\$ConfigBranch\Wwise.ini"
 $SML1_Path = "$ConfigDir\server\$ConfigBranch\SML.ini"
 
 # client
+$def_Engine2_Path = "$ConfigDir\client\$ConfigBranch\def_Engine.ini"
 $Engine2_Path = "$ConfigDir\client\$ConfigBranch\Engine.ini"
 $GameUserSettings2_Path = "$ConfigDir\client\$ConfigBranch\GameUserSettings.ini"
 $Game2_Path = "$ConfigDir\client\$ConfigBranch\Game.ini"
@@ -145,21 +183,33 @@ $MoreIni2 = "-BridgeINI=`"$Bridge2_Path`"", "-ConcertSyncCoreINI=`"$ConcertSyncC
 $Args2 = "$CommonArgs", "-Username=`"$Username2`"", "$MainIni2", "$OtherIni2", "$MoreIni2"#, "-popupwindow", "-windowed", "-WinX=180", "-WinY=90", "-ResX=1600", "-ResY=900"
 
 
-#if ($server) {
+
+
 		
-	#$latestSaveFile = (Get-ChildItem $SaveFolder | sort LastWriteTime | select -last 1)
-	#$latestSaveFileName = $latestSaveFile.Basename
+$latestSaveFile = (Get-ChildItem $SaveFolder | sort LastWriteTime | select -last 1)
+$latestSaveFileName = $latestSaveFile.Basename
+
+if (($server) -OR ($clienthost)) {
 	
-	#New-Item $Engine1Path -ItemType File -Force -Value "[/Script/EngineSettings.GameMapsSettings]`n"
-	#Add-Content $Engine1Path "LocalMapOptions=??skipOnboarding?loadgame=u7.mods_test_121223-161339?allowPossessAny?DayLength=3600?NightLength=1?Visibility=SV_Public?adminpassword=000111fff?bUseIpSockets=1"
-	#Add-Content $Engine1Path "GameDefaultMap=/Game/FactoryGame/Map/GameLevel01/Persistent_Level.Persistent_Level`nGameInstanceClass=/Script/FactoryGame.FGGameInstance`nServerDefaultMap=/Game/FactoryGame/Map/DedicatedserverEntry.DedicatedserverEntry"
+	if ($server) {
+		$def_path = $def_Engine1_Path
+		$dst_path = $Engine1_Path
+	}
+	
+	if ($clienthost) {
+		$def_path = $def_Engine2_Path
+		$dst_path = $Engine2_Path
+	}
+	
+	(Get-Content $def_path).Replace('LocalMapOptions=', "LocalMapOptions=??skipOnboarding?loadgame=" + $latestSaveFileName + "?allowPossessAny?sessionName=" + $latestSaveFileName + "?" + $DefaultMapOptions).Replace("GameDefaultMap=", "GameDefaultMap=" + $GameDefaultMap) | Set-Content $dst_path
 
-#}
+}
 
-# TODO multiplayer and loadLatestSave arguments incompatible. direct loading into a save does not allow joining via `open 127.0.0.1` in the client, the host must manually load another save file for that to be set up
+if ($client) {
+	
+	(Get-Content $def_Engine2_Path).Replace("GameDefaultMap=", "GameDefaultMap=" + $MenuDefaultMap) | Set-Content $Engine2_Path
 
-
-
+}
 
 function BGProcess(){
     Start-Process -NoNewWindow @args
