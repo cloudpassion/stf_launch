@@ -2,18 +2,27 @@ param (
 	[switch]$multiplayer = $false,
 	[switch]$server = $false,
 	[switch]$client = $false,
-	[switch]$clienthost = $false
+	[switch]$clienthost = $false,
+	[switch]$vanilla = $false,
+	[switch]$fallback = $false
 )	
 	
-# original source from 
-# https://docs.ficsit.app/satisfactory-modding/latest/Development/TestingResources.html#LaunchScript
+	# multiplayer for run two windows, server and client
+	# server for run server
+	# client for run client
+	# clienthost run client and autostart game as server
+	# vanilla this flag modified config dir. No configs changes
+	# fallback same as vanilla, but with little modifications
+		
+# modified script
+# original from https://docs.ficsit.app/satisfactory-modding/latest/Development/TestingResources.html#LaunchScript
 
 
 ##### EDITABLE VARS
 
-$CommonArgs = "-log", "-offline", "-NoSteamClient", "-NoEpicPortal",  "-unattended", "-nothreadtimeout", "-nosplash", "-USEALLAVAILABLECORES", "-multihome=0.0.0.0", "-locallogtimes", "-EnableParallelCharacterMovementTickFunction", "-EnableParallelCharacterTickFunction", "-UseDynamicPhysicsScene", "-DisablePacketRouting", "-EpicApp=Satisfactory", "-EOSArtifactNameOverride=`"Satisfactory`"", "-EOSArtifactNameOverride='Satisfactory'", "-Multiprocess"
+$CommonArgs = "-log", "-offline", "-NoSteamClient", "-NoEpicPortal",  "-unattended", "-nothreadtimeout", "-nosplash", "-USEALLAVAILABLECORES", "-multihome=0.0.0.0", "-locallogtimes", "-EnableParallelCharacterMovementTickFunction", "-EnableParallelCharacterTickFunction", "-UseDynamicPhysicsScene", "-DisablePacketRouting", "-EpicApp=Satisfactory", "-EOSArtifactNameOverride=Satisfactory", "-EOSArtifactNameOverride=Satisfactory", "-Multiprocess", "-ExecCmds=`"r.DFShadowQuality=0`""
 
-$DefaultMapOptions = "DayLength=3600?NightLength=1?Visibility=SV_FriendsOnly?adminpassword=000111fff?bUseIpSockets=1?startloc=Grass Fields?advancedGameSettings=FG.GameRules.NoPower=AgAAAAQAAAABAAAA,FG.GameRules.StartingTier=DgAAAAQAAAAJAAAA,FG.GameRules.DisableArachnidCreatures=AgAAAAQAAAABAAAA,FG.GameRules.NoUnlockCost=AgAAAAQAAAABAAAA,FG.GameRules.SetGamePhase=DgAAAAQAAAAEAAAA,FG.GameRules.UnlockAllResearchSchematics=AgAAAAQAAAABAAAA,FG.GameRules.UnlockInstantAltRecipes=AgAAAAQAAAABAAAA,FG.PlayerRules.KeepInventory=DgAAAAQAAAACAAAA,FG.GameRules.UnlockAllResourceSinkSchematics=AgAAAAQAAAABAAAA,FG.PlayerRules.NoBuildCost=AgAAAAQAAAABAAAA,FG.PlayerRules.GodMode=AgAAAAQAAAABAAAA,FG.PlayerRules.FlightMode=AgAAAAQAAAABAAAA?SessionSettings=SML.ForceAllowCheats=AgAAAAQAAAABAAAA?listen"
+$DefaultMapOptions = "DayLength=3600?NightLength=1?Visibility=SV_FriendsOnly?adminpassword=uselesspassword?bUseIpSockets=1?startloc=Grass Fields?advancedGameSettings=FG.GameRules.NoPower=AgAAAAQAAAABAAAA,FG.GameRules.StartingTier=DgAAAAQAAAAJAAAA,FG.GameRules.DisableArachnidCreatures=AgAAAAQAAAABAAAA,FG.GameRules.NoUnlockCost=AgAAAAQAAAABAAAA,FG.GameRules.NoFuel=AgAAAAQAAAABAAAA,FG.GameRules.SetGamePhase=DgAAAAQAAAAEAAAA,FG.GameRules.UnlockAllResearchSchematics=AgAAAAQAAAABAAAA,FG.GameRules.UnlockInstantAltRecipes=AgAAAAQAAAABAAAA,FG.PlayerRules.KeepInventory=DgAAAAQAAAACAAAA,FG.GameRules.UnlockAllResourceSinkSchematics=AgAAAAQAAAABAAAA,FG.PlayerRules.NoBuildCost=AgAAAAQAAAABAAAA,FG.PlayerRules.GodMode=AgAAAAQAAAABAAAA,FG.PlayerRules.FlightMode=AgAAAAQAAAABAAAA?SessionSettings=SML.ForceAllowCheats=AgAAAAQAAAABAAAA?listen"
 	
 $GameDefaultMap = "/Game/FactoryGame/Map/GameLevel01/Persistent_Level.Persistent_Level"	
 $MenuDefaultMap = "/Game/FactoryGame/Map/MenuScenes/Map_Menu_Titan_Update8.Map_Menu_Titan_Update8"
@@ -42,13 +51,15 @@ if (($server) -AND ($clienthost)) {
 
 $settings = Get-Content -Path 'settings.ini' -Raw | ConvertFrom-StringData
 $branch = $settings.branch
+$uselesspassword = $settings.adminpassword
+$DefaultMapOptions = $DefaultMapOptions.Replace('uselesspassword', $uselesspassword)
+
 
 if (!$branch) {
 	Write "no branch in settings.ini"
 	Write "exiting..."
 	return
 }
-
 
 $SavesFolder = "C:\Users\$Env:UserName\AppData\Local\FactoryGame\Saved\SaveGames"
 $STEAMID = Get-ChildItem -Path $SavesFolder\*7656* -Name
@@ -79,6 +90,13 @@ if ($branch -eq "EA") {
 	Write "unknown branch: '$branch'"
 	Write "exiting..."
 	return
+}
+
+# vanilla
+if ($vanilla) {
+	$ConfigDir = "$ConfigDir\vanilla"
+} elseif ($fallback) {
+	$ConfigDir = "$ConfigDir\vanilla\fallback"
 }
 
 # server
@@ -162,16 +180,16 @@ $SML2_Path = "$ConfigDir\client\$ConfigBranch\SML.ini"
 
 if ($server) {
 	
-	$Username1 = "Server"
-	$Username2 = "Client"
+	$Username1 = "$env:computername-Server"
+	$Username2 = "$env:computername-Client"
 
 } else {
 	
-	$Username1 = "Client"
-	$Username2 = "SecondaryClient"
+	$Username1 = "$env:computername-Client"
+	$Username2 = "$env:computername-SecondaryClient"
 }
 
-$MainIni1 = "-EngineINI=`"$Engine1_Path`"", "-GameUserSettingsINI=`"$GameUserSettings1_Path`"", "-GameINI=`"$Game1_Path`"", "-InputINI=`"$Input1_Path`"", "-ScalabilityINI=`"$Scalability1_Path`"", "-DeviceProfilesINI=`"$DeviceProfiles1_Path`""
+$MainIni1 = "-EngineINI=`"$Engine1_Path`"",  "-GameUserSettingsINI=`"$GameUserSettings1_Path`"", "-GameINI=`"$Game1_Path`"", "-InputINI=`"$Input1_Path`"", "-ScalabilityINI=`"$Scalability1_Path`"", "-DeviceProfilesINI=`"$DeviceProfiles1_Path`""
 $OtherIni1 = "-ApexDestructionINI=`"$ApexDestruction1_Path`"", "-CompatINI=`"$Compat1_Path`"", "-ControlRigINI=`"$ControlRig1_Path`"", "-EditorScriptingUtilitiesINI=`"$EditorScriptingUtilities1_Path`"", "-FullBodyIKINI=`"$FullBodyIK1_Path`"", "-HardwareINI=`"$Hardware1_Path`"", "-MotoSynthINI=`"$MotoSynth1_Path`"", "-NiagaraINI=`"$Niagara1_Path`"", "-Paper2DINI=`"$Paper2D1_Path`"", "-PhysXVehiclesINI=`"$PhysXVehicles1_Path`"", "-RuntimeOptionsINI=`"$RuntimeOptions1_Path`"", "-SynthesisINI=`"$Synthesis1_Path`"", "-VariantManagerContentINI=`"$VariantManagerContent1_Path`""
 $MoreIni1 = "-BridgeINI=`"$Bridge1_Path`"", "-ConcertSyncCoreINI=`"$ConcertSyncCore1_Path`"", "-ConsoleVariablesINI=`"$ConsoleVariables1_Path`"", "-DatasmithContentINI=`"$DatasmithContent1_Path`"", "-EnhancedInputINI=`"$EnhancedInput1_Path`"", "-GLTFExporterINI=`"$GLTFExporter1_Path`"", "-IKRigINI=`"$IKRig1_Path`"", "-InstallBundleINI=`"$InstallBundle1_Path`"", "-MetasoundINI=`"$Metasound1_Path`"", "-ModelViewViewModelINI=`"$ModelViewViewModel1_Path`"", "-MovieRenderPipelineINI=`"$MovieRenderPipeline1_Path`"", "-OnlineIntegrationINI=`"$OnlineIntegration1_Path`"", "-OnlineSubsystemEOSINI=`"$OnlineSubsystemEOS1_Path`"", "-TraceUtilitiesINI=`"$TraceUtilities1_Path`"", "-WwiseINI=`"$Wwise1_Path`"", "-SMLINI=`"$SML1_Path`""
 
@@ -182,10 +200,7 @@ $OtherIni2 = "-ApexDestructionINI=`"$ApexDestruction2_Path`"", "-CompatINI=`"$Co
 $MoreIni2 = "-BridgeINI=`"$Bridge2_Path`"", "-ConcertSyncCoreINI=`"$ConcertSyncCore2_Path`"", "-ConsoleVariablesINI=`"$ConsoleVariables2_Path`"", "-DatasmithContentINI=`"$DatasmithContent2_Path`"", "-EnhancedInputINI=`"$EnhancedInput2_Path`"", "-GLTFExporterINI=`"$GLTFExporter2_Path`"", "-IKRigINI=`"$IKRig2_Path`"", "-InstallBundleINI=`"$InstallBundle2_Path`"", "-MetasoundINI=`"$Metasound2_Path`"", "-ModelViewViewModelINI=`"$ModelViewViewModel2_Path`"", "-MovieRenderPipelineINI=`"$MovieRenderPipeline2_Path`"", "-OnlineIntegrationINI=`"$OnlineIntegration2_Path`"", "-OnlineSubsystemEOSINI=`"$OnlineSubsystemEOS2_Path`"", "-TraceUtilitiesINI=`"$TraceUtilities2_Path`"", "-WwiseINI=`"$Wwise2_Path`"", "-SMLINI=`"$SML2_Path`""
 $Args2 = "$CommonArgs", "-Username=`"$Username2`"", "$MainIni2", "$OtherIni2", "$MoreIni2"#, "-popupwindow", "-windowed", "-WinX=180", "-WinY=90", "-ResX=1600", "-ResY=900"
 
-
-
-
-		
+	
 $latestSaveFile = (Get-ChildItem $SaveFolder | sort LastWriteTime | select -last 1)
 $latestSaveFileName = $latestSaveFile.Basename
 
@@ -200,17 +215,23 @@ if (($server) -OR ($clienthost)) {
 		$def_path = $def_Engine2_Path
 		$dst_path = $Engine2_Path
 	}
-	
-	(Get-Content $def_path).Replace('LocalMapOptions=', "LocalMapOptions=??skipOnboarding?loadgame=" + $latestSaveFileName + "?allowPossessAny?sessionName=" + $latestSaveFileName + "?" + $DefaultMapOptions).Replace("GameDefaultMap=", "GameDefaultMap=" + $GameDefaultMap) | Set-Content $dst_path
+	if (Test-Path $def_path) {
+		(Get-Content $def_path).Replace('LocalMapOptions=', "LocalMapOptions=??skipOnboarding?loadgame=" + $latestSaveFileName + "?allowPossessAny?sessionName=" + $latestSaveFileName + "?" + $DefaultMapOptions).Replace("GameDefaultMap=" + $MenuDefaultMap, "GameDefaultMap=" + $GameDefaultMap) | Set-Content $dst_path
+	}
 
 }
 
 if ($client) {
+		
+	$def_path = $def_Engine2_Path
+	$dst_path = $Engine2_Path
 	
-	(Get-Content $def_Engine2_Path).Replace("GameDefaultMap=", "GameDefaultMap=" + $MenuDefaultMap) | Set-Content $Engine2_Path
+	if (Test-Path $def_path) {
+		(Get-Content $def_path).Replace("GameDefaultMap=", "GameDefaultMap=" + $MenuDefaultMap) | Set-Content $dst_path
+	}
 
 }
-
+	
 function BGProcess(){
     Start-Process -NoNewWindow @args
 }
