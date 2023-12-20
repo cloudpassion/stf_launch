@@ -184,17 +184,8 @@ $TraceUtilities2_Path = "$ConfigDir\client\$ConfigBranch\TraceUtilities.ini"
 $Wwise2_Path = "$ConfigDir\client\$ConfigBranch\Wwise.ini"
 $SML2_Path = "$ConfigDir\client\$ConfigBranch\SML.ini"
 
-
-if ($server) {
-	
-	$Username1 = "$env:computername-Server"
-	$Username2 = "$env:computername-Client"
-
-} else {
-	
-	$Username1 = "$env:computername-Client"
-	$Username2 = "$env:computername-SecondaryClient"
-}
+$Username1 = "$env:computername-Server"
+$Username2 = "$env:computername-Client"
 
 $MainIni1 = "-EngineINI=`"$Engine1_Path`"",  "-GameUserSettingsINI=`"$GameUserSettings1_Path`"", "-GameINI=`"$Game1_Path`"", "-InputINI=`"$Input1_Path`"", "-ScalabilityINI=`"$Scalability1_Path`"", "-DeviceProfilesINI=`"$DeviceProfiles1_Path`""
 $OtherIni1 = "-ApexDestructionINI=`"$ApexDestruction1_Path`"", "-CompatINI=`"$Compat1_Path`"", "-ControlRigINI=`"$ControlRig1_Path`"", "-EditorScriptingUtilitiesINI=`"$EditorScriptingUtilities1_Path`"", "-FullBodyIKINI=`"$FullBodyIK1_Path`"", "-HardwareINI=`"$Hardware1_Path`"", "-MotoSynthINI=`"$MotoSynth1_Path`"", "-NiagaraINI=`"$Niagara1_Path`"", "-Paper2DINI=`"$Paper2D1_Path`"", "-PhysXVehiclesINI=`"$PhysXVehicles1_Path`"", "-RuntimeOptionsINI=`"$RuntimeOptions1_Path`"", "-SynthesisINI=`"$Synthesis1_Path`"", "-VariantManagerContentINI=`"$VariantManagerContent1_Path`""
