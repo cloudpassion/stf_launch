@@ -4,7 +4,8 @@ param (
 	[switch]$client = $false,
 	[switch]$clienthost = $false,
 	[switch]$vanilla = $false,
-	[switch]$fallback = $false
+	[switch]$fallback = $false,
+	[switch]$online = $false
 )	
 	
 	# multiplayer for run two windows, server and client
@@ -20,7 +21,7 @@ param (
 
 ##### EDITABLE VARS
 
-$CommonArgs = "-log", "-offline", "-NoSteamClient", "-NoEpicPortal",  "-unattended", "-nothreadtimeout", "-nosplash", "-USEALLAVAILABLECORES", "-multihome=0.0.0.0", "-locallogtimes", "-EnableParallelCharacterMovementTickFunction", "-EnableParallelCharacterTickFunction", "-UseDynamicPhysicsScene", "-DisablePacketRouting", "-EpicApp=Satisfactory", "-EOSArtifactNameOverride=Satisfactory", "-EOSArtifactNameOverride=Satisfactory", "-ExecCmds=`"r.DFShadowQuality=0`"", "-Multiprocess"
+$CommonArgs = "-log", "-unattended", "-nothreadtimeout", "-nosplash", "-USEALLAVAILABLECORES", "-multihome=0.0.0.0", "-locallogtimes", "-EnableParallelCharacterMovementTickFunction", "-EnableParallelCharacterTickFunction", "-UseDynamicPhysicsScene", "-DisablePacketRouting", "-EpicApp=Satisfactory", "-EOSArtifactNameOverride=Satisfactory", "-EOSArtifactNameOverride=Satisfactory", "-ExecCmds=`"r.DFShadowQuality=0`"", "-Multiprocess"
 
 $DefaultMapOptions = "DayLength=3600?NightLength=1?Visibility=SV_FriendsOnly?adminpassword=uselesspassword?bUseIpSockets=1?startloc=Grass Fields?advancedGameSettings=FG.GameRules.NoPower=AgAAAAQAAAABAAAA,FG.GameRules.StartingTier=DgAAAAQAAAAJAAAA,FG.GameRules.DisableArachnidCreatures=AgAAAAQAAAABAAAA,FG.GameRules.NoUnlockCost=AgAAAAQAAAABAAAA,FG.GameRules.NoFuel=AgAAAAQAAAABAAAA,FG.GameRules.SetGamePhase=DgAAAAQAAAAEAAAA,FG.GameRules.UnlockAllResearchSchematics=AgAAAAQAAAABAAAA,FG.GameRules.UnlockInstantAltRecipes=AgAAAAQAAAABAAAA,FG.PlayerRules.KeepInventory=DgAAAAQAAAACAAAA,FG.GameRules.UnlockAllResourceSinkSchematics=AgAAAAQAAAABAAAA,FG.PlayerRules.NoBuildCost=AgAAAAQAAAABAAAA,FG.PlayerRules.GodMode=AgAAAAQAAAABAAAA,FG.PlayerRules.FlightMode=AgAAAAQAAAABAAAA?SessionSettings=SML.ForceAllowCheats=AgAAAAQAAAABAAAA?listen"
 
@@ -97,9 +98,16 @@ if ($branch -eq "EA") {
 # vanilla
 if ($vanilla) {
 	$ConfigDir = "$ConfigDir\vanilla"
+	$CommonArgs = "$CommonArgs", "-offline", "-NoSteamClient", "-NO_EOS_OVERLAY", "-NoEpicPortal"
 } elseif ($fallback) {
 	$ConfigDir = "$ConfigDir\vanilla\fallback"
+	$CommonArgs = "$CommonArgs", "-offline", "-NoSteamClient", "-NO_EOS_OVERLAY", "-NoEpicPortal"
+} elseif ($online) {
+	$ConfigDir = "$ConfigDir\online"
+	
 }
+
+
 
 if (!(Test-Path "$ConfigDir\server\$ConfigBranch")) {
 	New-Item -Path "$ConfigDir\server\$ConfigBranch" -ItemType Directory
